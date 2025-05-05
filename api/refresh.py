@@ -46,18 +46,56 @@ class handler(BaseHTTPRequestHandler):
                 plain_text += f"Exported At: {payload['exported_at']}\n"
                 plain_text += f"Total Activities: {len(activities)}\n\n"
                 
-                # Add summary of each activity
-                for i, activity in enumerate(activities[:100]):  # Limit to first 100 to avoid oversized responses
+                # Add all activities with more details
+                for i, activity in enumerate(activities):
                     plain_text += f"Activity {i+1}:\n"
+                    # Basic info
+                    plain_text += f"  ID: {activity.get('activityId', 'Unknown')}\n"
                     plain_text += f"  Type: {activity.get('activityType', {}).get('typeKey', 'Unknown')}\n"
-                    plain_text += f"  Start: {activity.get('startTimeLocal', 'Unknown')}\n"
+                    plain_text += f"  Name: {activity.get('activityName', 'Unknown')}\n"
+                    plain_text += f"  Description: {activity.get('description', 'None')}\n"
+                    
+                    # Dates and times
+                    plain_text += f"  Start (Local): {activity.get('startTimeLocal', 'Unknown')}\n"
+                    plain_text += f"  Start (GMT): {activity.get('startTimeGMT', 'Unknown')}\n"
                     plain_text += f"  Duration: {activity.get('duration', 0)} seconds\n"
+                    plain_text += f"  Elapsed Duration: {activity.get('elapsedDuration', 0)} seconds\n"
+                    plain_text += f"  Moving Duration: {activity.get('movingDuration', 0)} seconds\n"
+                    
+                    # Distance and pace
                     plain_text += f"  Distance: {activity.get('distance', 0)} meters\n"
+                    plain_text += f"  Average Pace: {activity.get('averagePace', 0)} min/km\n"
+                    plain_text += f"  Average Moving Pace: {activity.get('averageMovingPace', 0)} min/km\n"
+                    
+                    # Speed
+                    plain_text += f"  Average Speed: {activity.get('averageSpeed', 0)} m/s\n"
+                    plain_text += f"  Max Speed: {activity.get('maxSpeed', 0)} m/s\n"
+                    
+                    # HR and calories
+                    plain_text += f"  Average HR: {activity.get('averageHR', 0)} bpm\n"
+                    plain_text += f"  Max HR: {activity.get('maxHR', 0)} bpm\n"
                     plain_text += f"  Calories: {activity.get('calories', 0)}\n"
+                    
+                    # Elevation
+                    plain_text += f"  Elevation Gain: {activity.get('elevationGain', 0)} meters\n"
+                    plain_text += f"  Elevation Loss: {activity.get('elevationLoss', 0)} meters\n"
+                    plain_text += f"  Min Elevation: {activity.get('minElevation', 0)} meters\n"
+                    plain_text += f"  Max Elevation: {activity.get('maxElevation', 0)} meters\n"
+                    
+                    # Steps and metrics
+                    plain_text += f"  Steps: {activity.get('steps', 0)}\n"
+                    plain_text += f"  Strokes: {activity.get('strokes', 0)}\n"
+                    plain_text += f"  VO2 Max: {activity.get('vO2MaxValue', 0)}\n"
+                    plain_text += f"  Training Effect: {activity.get('trainingEffect', 0)}\n"
+                    plain_text += f"  Anaerobic Training Effect: {activity.get('anaerobicTrainingEffect', 0)}\n"
+                    
+                    # Location
+                    plain_text += f"  Start Latitude: {activity.get('startLatitude', 0)}\n"
+                    plain_text += f"  Start Longitude: {activity.get('startLongitude', 0)}\n"
+                    plain_text += f"  End Latitude: {activity.get('endLatitude', 0)}\n"
+                    plain_text += f"  End Longitude: {activity.get('endLongitude', 0)}\n"
+                    
                     plain_text += "\n"
-                
-                if len(activities) > 100:
-                    plain_text += f"... and {len(activities) - 100} more activities (truncated for size)"
                     
                 self.wfile.write(plain_text.encode())
                 return
