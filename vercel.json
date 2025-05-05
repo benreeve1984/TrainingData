@@ -17,24 +17,16 @@
     },
     {
       "src": "/training.json",
-      "dest": "/api/refresh.py"
+      "dest": "/api/refresh.py",
+      "headers": {
+        "Cache-Control": "public, max-age=0, s-maxage=3600, stale-while-revalidate"
+      }
     }
   ],
   "crons": [
     {
       "path": "/api/refresh.py",
       "schedule": "0 20 * * *"
-    }
-  ],
-  "headers": [
-    {
-      "source": "/training.json",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=0, s-maxage=3600, stale-while-revalidate"
-        }
-      ]
     }
   ]
 } 
