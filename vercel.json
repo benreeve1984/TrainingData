@@ -1,0 +1,25 @@
+{
+  "version": 2,
+  "functions": {
+    "api/refresh.py": {
+      "runtime": "python3.11"
+    }
+  },
+  "crons": [
+    {
+      "path": "/api/refresh.py",
+      "schedule": "0 20 * * *"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/training.json",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, s-maxage=3600, stale-while-revalidate"
+        }
+      ]
+    }
+  ]
+} 
