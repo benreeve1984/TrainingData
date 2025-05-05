@@ -1,5 +1,6 @@
 import json
 import os
+import sys
 from datetime import datetime
 from pathlib import Path
 from http.server import BaseHTTPRequestHandler
@@ -35,34 +36,76 @@ class handler(BaseHTTPRequestHandler):
                 "activities": activities
             }
 
-            # Determine where to write the file
-            # For Vercel, use the specific public directory path
-            static_dir = os.environ.get("VERCEL_OUTPUT_DIR", "/tmp")
-            if static_dir == "/tmp":
-                # Fallback to a common Vercel path pattern if VERCEL_OUTPUT_DIR is not set
-                if os.path.exists("/vercel/output/static"):
-                    static_dir = "/vercel/output/static"
-                elif os.path.exists("/var/task/public"):
-                    static_dir = "/var/task/public"
+            # Log environment information for debugging
+            debug_info = {
+                "env_vars": {k: v for k, v in os.environ.items() if not k.startswith("AWS_") and not "PASSWORD" in k and not "SECRET" in k},
+                "cwd": os.getcwd(),
+                "path_exists": {}
+            }
             
-            output_path = Path(static_dir) / "training.json"
+            # Try multiple common Vercel public paths
+            possible_paths = [
+                "./public/training.json",
+                "/vercel/output/static/training.json",
+                "/vercel/path0/public/training.json",
+                "/var/task/public/training.json",
+                os.path.join(os.getcwd(), "public", "training.json"),
+                Path(os.environ.get("VERCEL_OUTPUT_DIR", "/tmp")) / "static" / "training.json",
+                Path(os.environ.get("VERCEL_OUTPUT_DIR", "/tmp")) / "public" / "training.json",
+                "/tmp/training.json"
+            ]
             
-            # Create directory if it doesn't exist
-            os.makedirs(os.path.dirname(output_path), exist_ok=True)
+            # Check which paths exist
+            for path_str in possible_paths:
+                path = Path(path_str)
+                parent_dir = path.parent
+                debug_info["path_exists"][str(path)] = os.path.exists(path)
+                debug_info["path_exists"][f"{parent_dir} (dir)"] = os.path.exists(parent_dir)
+                
+                # Create directory if it doesn't exist
+                if not os.path.exists(parent_dir) and "tmp" not in str(parent_dir).lower():
+                    try:
+                        os.makedirs(parent_dir, exist_ok=True)
+                        debug_info["path_exists"][f"{parent_dir} (created)"] = True
+                    except Exception as e:
+                        debug_info["path_exists"][f"{parent_dir} (error)"] = str(e)
+            
+            # Write to all possible paths to maximize chances of success
+            written_paths = []
+            for path_str in possible_paths:
+                try:
+                    with open(path_str, "w") as f:
+                        json.dump(payload, f, indent=2)
+                    written_paths.append(path_str)
+                except Exception as e:
+                    debug_info[f"error_{path_str}"] = str(e)
+            
+            # Try to write to the public directory relative to the current directory
+            try:
+                # Create public directory in project root
+                project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+                public_dir = os.path.join(project_root, "public")
+                if not os.path.exists(public_dir):
+                    os.makedirs(public_dir, exist_ok=True)
+                
+                # Write to public/training.json in project root
+                project_path = os.path.join(public_dir, "training.json")
+                with open(project_path, "w") as f:
+                    json.dump(payload, f, indent=2)
+                written_paths.append(project_path)
+            except Exception as e:
+                debug_info["error_project_path"] = str(e)
 
-            # Write the JSON file
-            with open(output_path, "w") as f:
-                json.dump(payload, f, indent=2)
-
-            # Also write to /tmp as a fallback
-            with open("/tmp/training.json", "w") as f:
-                json.dump(payload, f, indent=2)
-
-            # Return success response with details on file location
+            # Return success response with debug info
             self.send_response(200)
             self.send_header('Content-type', 'text/plain')
             self.end_headers()
-            self.wfile.write(f"Wrote {len(activities)} activities to {output_path}".encode())
+            response = {
+                "message": f"Wrote {len(activities)} activities",
+                "written_paths": written_paths,
+                "debug_info": debug_info
+            }
+            self.wfile.write(json.dumps(response, indent=2).encode())
             
         except Exception as e:
             self.send_response(500)
