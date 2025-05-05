@@ -34,6 +34,34 @@ class handler(BaseHTTPRequestHandler):
                 "activities": activities
             }
 
+            # For plain text endpoint
+            if "/training.txt" in self.path:
+                self.send_response(200)
+                self.send_header('Content-type', 'text/plain')
+                self.send_header('Cache-Control', 'public, max-age=0, s-maxage=3600, stale-while-revalidate')
+                self.end_headers()
+                
+                # Format the JSON as a readable plain text
+                plain_text = f"Schema Version: {payload['schema_version']}\n"
+                plain_text += f"Exported At: {payload['exported_at']}\n"
+                plain_text += f"Total Activities: {len(activities)}\n\n"
+                
+                # Add summary of each activity
+                for i, activity in enumerate(activities[:100]):  # Limit to first 100 to avoid oversized responses
+                    plain_text += f"Activity {i+1}:\n"
+                    plain_text += f"  Type: {activity.get('activityType', {}).get('typeKey', 'Unknown')}\n"
+                    plain_text += f"  Start: {activity.get('startTimeLocal', 'Unknown')}\n"
+                    plain_text += f"  Duration: {activity.get('duration', 0)} seconds\n"
+                    plain_text += f"  Distance: {activity.get('distance', 0)} meters\n"
+                    plain_text += f"  Calories: {activity.get('calories', 0)}\n"
+                    plain_text += "\n"
+                
+                if len(activities) > 100:
+                    plain_text += f"... and {len(activities) - 100} more activities (truncated for size)"
+                    
+                self.wfile.write(plain_text.encode())
+                return
+
             # For direct fetch, just return JSON data
             if "/training.json" in self.path:
                 self.send_response(200)

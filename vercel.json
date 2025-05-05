@@ -25,6 +25,13 @@
       "headers": {
         "Cache-Control": "public, max-age=0, s-maxage=3600, stale-while-revalidate"
       }
+    },
+    {
+      "src": "/training.txt",
+      "dest": "/api/refresh.py",
+      "headers": {
+        "Cache-Control": "public, max-age=0, s-maxage=3600, stale-while-revalidate"
+      }
     }
   ],
   "crons": [
