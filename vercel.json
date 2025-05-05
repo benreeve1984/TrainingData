@@ -1,10 +1,11 @@
 {
   "version": 2,
-  "functions": {
-    "api/refresh.py": {
-      "runtime": "@vercel/python"
+  "builds": [
+    {
+      "src": "api/refresh.py",
+      "use": "@vercel/python"
     }
-  },
+  ],
   "crons": [
     {
       "path": "/api/refresh.py",
