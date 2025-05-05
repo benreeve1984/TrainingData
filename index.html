@@ -45,6 +45,53 @@
       border-radius: 4px;
       overflow-x: auto;
     }
+    #json-display {
+      max-height: 600px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      font-size: 12px;
+    }
+    .button {
+      display: inline-block;
+      background-color: #0070f3;
+      color: white;
+      padding: 8px 16px;
+      border-radius: 4px;
+      margin-top: 10px;
+      margin-right: 10px;
+      cursor: pointer;
+    }
+    .tab-buttons {
+      margin-bottom: 15px;
+    }
+    .tab-button {
+      background-color: #f1f1f1;
+      border: none;
+      padding: 8px 16px;
+      cursor: pointer;
+      border-radius: 4px 4px 0 0;
+    }
+    .tab-button.active {
+      background-color: #0070f3;
+      color: white;
+    }
+    .tab-content {
+      display: none;
+    }
+    .tab-content.active {
+      display: block;
+    }
+    #plaintext-json {
+      font-size: 12px;
+      height: 600px;
+    }
+    .activity-count {
+      background-color: #e0f2fe;
+      padding: 8px 12px;
+      border-radius: 4px;
+      margin-bottom: 10px;
+      display: inline-block;
+    }
   </style>
 </head>
 <body>
@@ -53,6 +100,27 @@
   <div class="card">
     <h2>About</h2>
     <p>This is a Vercel-hosted service that exports Garmin Connect activities to a JSON file, refreshed daily at 20:00 UTC.</p>
+  </div>
+
+  <div class="card">
+    <h2>Quick Data Access</h2>
+    <div class="tab-buttons">
+      <button class="tab-button active" onclick="showTab('viewer')">JSON Viewer</button>
+      <button class="tab-button" onclick="showTab('plaintext')">Plain Text</button>
+    </div>
+    
+    <div id="viewer" class="tab-content active">
+      <p class="activity-count">Showing last <span id="activity-count">0</span> activities:</p>
+      <pre id="json-display">Loading data...</pre>
+      <a class="button" href="/training.json" target="_blank">View Full JSON</a>
+      <button class="button" onclick="refreshData()">Refresh Data</button>
+    </div>
+    
+    <div id="plaintext" class="tab-content">
+      <p class="activity-count">Showing last <span id="plaintext-count">0</span> activities:</p>
+      <textarea id="plaintext-json" style="width: 100%; font-family: monospace;">Loading data...</textarea>
+      <button class="button" onclick="copyToClipboard()">Copy to Clipboard</button>
+    </div>
   </div>
 
   <div class="card">
@@ -82,5 +150,104 @@
   ]
 }</pre>
   </div>
+
+  <script>
+    // Number of activities to display
+    const DISPLAY_COUNT = 500;
+    
+    // Load the JSON data
+    function loadData() {
+      document.getElementById('json-display').textContent = 'Loading data...';
+      document.getElementById('plaintext-json').value = 'Loading data...';
+      
+      fetch('/training.json')
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('Failed to load data');
+          }
+          return response.json();
+        })
+        .then(data => {
+          // Get the last 500 activities
+          const activities = data.activities.slice(0, DISPLAY_COUNT);
+          const activityCount = activities.length;
+          
+          // Create the limited data object
+          const limitedData = {
+            schema_version: data.schema_version,
+            exported_at: data.exported_at,
+            activities: activities
+          };
+          
+          // Update activity count display
+          document.getElementById('activity-count').textContent = activityCount;
+          document.getElementById('plaintext-count').textContent = activityCount;
+          
+          // Format JSON with proper indentation for display
+          const formattedJson = JSON.stringify(limitedData, null, 2);
+          
+          // Display in JSON viewer
+          document.getElementById('json-display').textContent = formattedJson;
+          
+          // Display in plaintext
+          document.getElementById('plaintext-json').value = formattedJson;
+        })
+        .catch(error => {
+          const errorMsg = 'Error loading data: ' + error.message;
+          document.getElementById('json-display').textContent = errorMsg;
+          document.getElementById('plaintext-json').value = errorMsg;
+        });
+    }
+    
+    // Show the selected tab
+    function showTab(tabId) {
+      // Hide all tabs
+      document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.remove('active');
+      });
+      
+      // Deactivate all buttons
+      document.querySelectorAll('.tab-button').forEach(button => {
+        button.classList.remove('active');
+      });
+      
+      // Show the selected tab
+      document.getElementById(tabId).classList.add('active');
+      
+      // Activate the clicked button
+      document.querySelectorAll('.tab-button').forEach(button => {
+        if (button.textContent.toLowerCase().includes(tabId)) {
+          button.classList.add('active');
+        }
+      });
+    }
+    
+    // Copy plaintext to clipboard
+    function copyToClipboard() {
+      const textarea = document.getElementById('plaintext-json');
+      textarea.select();
+      document.execCommand('copy');
+      alert('Copied to clipboard!');
+    }
+    
+    // Refresh data from API
+    function refreshData() {
+      document.getElementById('json-display').textContent = 'Refreshing data...';
+      document.getElementById('plaintext-json').value = 'Refreshing data...';
+      
+      fetch('/api/refresh.py')
+        .then(response => response.json())
+        .then(result => {
+          alert(`Data refreshed! Fetched ${result.activity_count} activities.`);
+          loadData();
+        })
+        .catch(error => {
+          alert('Error refreshing data: ' + error.message);
+        });
+    }
+    
+    // Load data when the page loads
+    window.onload = loadData;
+  </script>
 </body>
 </html> 
