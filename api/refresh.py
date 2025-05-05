@@ -36,18 +36,33 @@ class handler(BaseHTTPRequestHandler):
             }
 
             # Determine where to write the file
-            static_dir = Path(os.environ.get("VERCEL_STATIC_FILES", "/tmp"))
-            output_path = static_dir / "training.json"
+            # For Vercel, use the specific public directory path
+            static_dir = os.environ.get("VERCEL_OUTPUT_DIR", "/tmp")
+            if static_dir == "/tmp":
+                # Fallback to a common Vercel path pattern if VERCEL_OUTPUT_DIR is not set
+                if os.path.exists("/vercel/output/static"):
+                    static_dir = "/vercel/output/static"
+                elif os.path.exists("/var/task/public"):
+                    static_dir = "/var/task/public"
+            
+            output_path = Path(static_dir) / "training.json"
+            
+            # Create directory if it doesn't exist
+            os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
             # Write the JSON file
             with open(output_path, "w") as f:
                 json.dump(payload, f, indent=2)
 
-            # Return success response
+            # Also write to /tmp as a fallback
+            with open("/tmp/training.json", "w") as f:
+                json.dump(payload, f, indent=2)
+
+            # Return success response with details on file location
             self.send_response(200)
             self.send_header('Content-type', 'text/plain')
             self.end_headers()
-            self.wfile.write(f"Wrote {len(activities)} activities".encode())
+            self.wfile.write(f"Wrote {len(activities)} activities to {output_path}".encode())
             
         except Exception as e:
             self.send_response(500)
