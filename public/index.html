@@ -37,53 +37,48 @@
     a:hover {
       text-decoration: underline;
     }
+    pre {
+      background-color: #f1f1f1;
+      padding: 12px;
+      border-radius: 4px;
+      overflow-x: auto;
+    }
   </style>
 </head>
 <body>
   <h1>Garmin Activities Exporter</h1>
   
   <div class="card">
-    <h2>About This Project</h2>
-    <p>This service fetches activities from Garmin Connect and makes them available as JSON data. It automatically refreshes once per day at 20:00 UTC.</p>
+    <h2>About</h2>
+    <p>This is a Vercel-hosted service that exports Garmin Connect activities to a JSON file, refreshed daily at 20:00 UTC.</p>
   </div>
 
   <div class="card">
-    <h2>Data Access</h2>
-    <p>Access your exported activities data at: <a href="/training.json">/training.json</a></p>
-    <p>The data includes up to 2,000 of your most recent Garmin Connect activities.</p>
+    <h2>Available Endpoints</h2>
+    
+    <h3>Activities Data</h3>
+    <p>Get the latest activities data in JSON format:</p>
+    <pre><a href="/training.json" target="_blank">/training.json</a></pre>
+    <p>This endpoint fetches live data from Garmin Connect, including up to 2000 of the most recent activities.</p>
+    
+    <h3>Refresh Data</h3>
+    <p>Manually trigger a refresh of the activities data:</p>
+    <pre><a href="/api/refresh.py" target="_blank">/api/refresh.py</a></pre>
+    <p>This endpoint logs in to Garmin Connect and fetches the latest activities.</p>
   </div>
 
   <div class="card">
-    <h2>API</h2>
-    <p>Manually trigger a data refresh by sending a GET request to: <code>/api/refresh.py</code></p>
-    <p>Note: This requires proper authentication credentials to be set in the environment variables.</p>
+    <h2>Response Format</h2>
+    <p>The response is a JSON object with the following structure:</p>
+    <pre>{
+  "schema_version": 1,
+  "exported_at": "2023-05-17T14:25:10.123456Z",
+  "activities": [
+    { /* activity data */ },
+    { /* activity data */ },
+    ...
+  ]
+}</pre>
   </div>
-
-  <div class="card">
-    <h2>Status</h2>
-    <p>Current status: <span id="status">Checking...</span></p>
-    <p>Last updated: <span id="last-updated">Checking...</span></p>
-  </div>
-
-  <script>
-    // Check if training.json exists and get its content
-    fetch('/training.json')
-      .then(response => {
-        if (!response.ok) {
-          throw new Error('No data available yet');
-        }
-        return response.json();
-      })
-      .then(data => {
-        document.getElementById('status').textContent = 'Active';
-        document.getElementById('status').style.color = 'green';
-        document.getElementById('last-updated').textContent = data.exported_at || 'Unknown';
-      })
-      .catch(error => {
-        document.getElementById('status').textContent = 'No data yet';
-        document.getElementById('status').style.color = 'orange';
-        document.getElementById('last-updated').textContent = 'Never';
-      });
-  </script>
 </body>
 </html> 
