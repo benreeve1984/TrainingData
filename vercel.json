@@ -1,11 +1,5 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "api/refresh.py",
-      "use": "@vercel/python"
-    }
-  ],
   "crons": [
     {
       "path": "/api/refresh.py",
